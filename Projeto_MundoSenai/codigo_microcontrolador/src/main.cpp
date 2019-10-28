@@ -1,4 +1,3 @@
-
 #include <SPI.h>
 #include <MFRC522.h>
 
@@ -19,6 +18,7 @@ void setup() {
 
   pinMode(releEsq, OUTPUT);
   pinMode(releDir, OUTPUT);
+  mfrc522.PCD_SetAntennaGain(mfrc522.RxGain_max);
 }
 
 //*****************************************************************************************//
