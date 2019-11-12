@@ -24,7 +24,7 @@ void setup() {
   pinMode(buzzer, OUTPUT);
   pinMode(pinSensor, INPUT);
   pinMode(pinFonte, OUTPUT);
-  //mfrc522.PCD_SetAntennaGain(mfrc522.RxGain_max);
+  mfrc522.PCD_SetAntennaGain(mfrc522.RxGain_max);
 }
 
 //*****************************************************************************************//
@@ -162,10 +162,7 @@ int fecharPortao(){
          
         
          if(i==1){
-          digitalWrite(buzzer,HIGH);
-          delay(250);
-          digitalWrite(buzzer,LOW);
-          delay(250);
+            tone(buzzer,800,250);          
          } else{
             digitalWrite(buzzer,LOW);
           }
@@ -178,18 +175,17 @@ int fecharPortao(){
       
     if(estadoSensor){ // quando sensor nao detectar
      
-      digitalWrite(releEsq,LOW);
       
-      
-      digitalWrite(buzzer,HIGH);
-      delay(200);
-      digitalWrite(buzzer, LOW);
-      delay(200);
-      digitalWrite(buzzer,HIGH);
-      delay(200);
-      digitalWrite(buzzer, LOW);
+      tone(buzzer,1200,200);
       delay(400);
+      tone(buzzer,1200,200);
+      delay(650);
+      
+      digitalWrite(releEsq,LOW);
+      delay(1000);
       digitalWrite(releEsq,HIGH);
+           
+      
   }
   return 0;
 }
