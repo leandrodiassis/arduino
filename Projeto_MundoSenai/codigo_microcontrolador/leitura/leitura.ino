@@ -9,7 +9,7 @@ const int releDir = 3; // rele 2
 const int pinSensor = 4; // pino do sensor
 const int pinFonte = 5; // pino da fonte do sensor
 const int buzzer = 6;
-int i = 0;
+int c = 0;
  
 char st[20];
  
@@ -26,13 +26,14 @@ void setup()
   
   Serial.println("Aproxime o seu cartao do leitor...");
   Serial.println();
-  //Define o número de colunas e linhas do LCD:  
 
 }
+
+
  
 void loop() 
 {
-  inicio:
+  inicio: ;
   digitalWrite(pinFonte, LOW); // sensor desligado por padrao
   digitalWrite(releEsq, HIGH); // rele esquerdo desligado por padrao
   digitalWrite(releDir, HIGH); // rele direito desligado por padrao
@@ -80,8 +81,12 @@ void loop()
   }
  
   fecharPortao();
-  
-} 
+    Serial.println("voltou para o loop");
+    goto inicio;
+}
+
+
+ 
 
 int abrirPortao(){
   Serial.println("Abrindo Portao");
@@ -92,8 +97,12 @@ int abrirPortao(){
 }
 
 int fecharPortao(){
-
-    Serial.println("Processando fechamento");
+   
+   int j = 0; 
+   int tempoPortao = 40;
+     
+   
+  Serial.println("Processando fechamento");
   bool estadoSensor = digitalRead(pinSensor); // ler estado do sensor
 
   do{ 
@@ -106,31 +115,69 @@ int fecharPortao(){
         Serial.println("Algo esta passando");
          
         
-         if(i==1){
+         if(c==1){
             tone(buzzer,800,250);          
          } else{
             digitalWrite(buzzer,LOW);
           }
    
-        i++;    
+        c++;    
         estadoSensor = digitalRead(pinSensor); // ler estado do sensor
       } while(!estadoSensor); // quando sensor detectar algo
     
-    i = 0;    
+    c = 0;
+    
+    
       
     if(estadoSensor){ // quando sensor nao detectar
-     
       
+      Serial.println("Objeto passou pelo portao. Fechando...");
       tone(buzzer,1200,200);
       delay(400);
       tone(buzzer,1200,200);
-      delay(650);
-      
-      digitalWrite(releEsq,LOW);
-      delay(1000);
-      digitalWrite(releEsq,HIGH);
-           
-      
+      delay(800);
+     
+
+      loopSensor: ;
+     do{            
+          
+         if(j <= tempoPortao){ // quando o portao fechar completamente
+            estadoSensor = digitalRead(pinSensor);         
+            Serial.println("loop enquanto nao detecta nada");
+            digitalWrite(releEsq,LOW);         
+          
+          }else{
+            digitalWrite(releEsq,HIGH);
+            Serial.println("aqui ele volta");
+            goto terminar;
+            }
+          
+        j++;
+      }while(estadoSensor); // enquanto nao detectar      
+    }
+
+
+
+
+      if(j<tempoPortao){
+      if(!estadoSensor){ // sensor detectou algo enquanto fechava
+       
+        Serial.println("algo foi detectado enquanto a porta fechava");
+        
+          do{
+              digitalWrite(releEsq,HIGH);
+              estadoSensor = digitalRead(pinSensor);
+              Serial.println("loop para manter a porta parada enquanto algo passa");
+              
+            }while(!estadoSensor); // mantenha porta parada enquanto algo estiver passado.
+            
+              
+                goto loopSensor;
+                
+                      
+        }
+      }
+      terminar: ;
+      Serial.println("chegou no fim");
+      return 0;
   }
-  return 0;
-}
