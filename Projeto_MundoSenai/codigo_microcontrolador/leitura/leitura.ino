@@ -1,142 +1,87 @@
 #include <SPI.h>
 #include <MFRC522.h>
-
-constexpr uint8_t RST_PIN = 9;     // pino RST do RFID
-constexpr uint8_t SS_PIN = 10;     // pino SS do RFID
+ 
+#define SS_PIN 10
+#define RST_PIN 9
+MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 const int releEsq = 2; //rele 1
 const int releDir = 3; // rele 2
 const int pinSensor = 4; // pino do sensor
 const int pinFonte = 5; // pino da fonte do sensor
 const int buzzer = 6;
 int i = 0;
-
-MFRC522 mfrc522(SS_PIN, RST_PIN); 
-
-//*****************************************************************************************//
-void setup() {
-  Serial.begin(9600);                                           // Initialize serial communications with the PC
-  SPI.begin();                                                  // Init SPI bus
-  mfrc522.PCD_Init();                                              // Init MFRC522 card
-  Serial.println(F(">>> Ler Informacoes Pessoais:"));    //shows in serial that it is ready to read
-
+ 
+char st[20];
+ 
+void setup() 
+{
+  Serial.begin(9600);   // Inicia a serial
+  SPI.begin();      // Inicia  SPI bus
+  mfrc522.PCD_Init();   // Inicia MFRC522
   pinMode(releEsq, OUTPUT);
   pinMode(releDir, OUTPUT);
   pinMode(buzzer, OUTPUT);
   pinMode(pinSensor, INPUT);
   pinMode(pinFonte, OUTPUT);
-  mfrc522.PCD_SetAntennaGain(mfrc522.RxGain_max);
-}
+  
+  Serial.println("Aproxime o seu cartao do leitor...");
+  Serial.println();
+  //Define o número de colunas e linhas do LCD:  
 
-//*****************************************************************************************//
-void loop() {
+}
+ 
+void loop() 
+{
+  inicio:
   digitalWrite(pinFonte, LOW); // sensor desligado por padrao
   digitalWrite(releEsq, HIGH); // rele esquerdo desligado por padrao
   digitalWrite(releDir, HIGH); // rele direito desligado por padrao
-
   
-  // Preparar chave- todas as chaves sao configuradas como FFFFFFFFFFFFh configuracao de fabrica.
-  MFRC522::MIFARE_Key key;
-  for (byte i = 0; i < 6; i++) key.keyByte[i] = 0xFF;
-
-  
-  byte block;
-  byte len;
-  MFRC522::StatusCode status;
-
-  //-------------------------------------------
-
-  // Buscar novos cartoes
-  if ( ! mfrc522.PICC_IsNewCardPresent()) {
-    return;
-  }
-
-  // Select one of the cards
-  if ( ! mfrc522.PICC_ReadCardSerial()) {
-    return;
-  }
-
-  Serial.println(F(">>> Cartao Detectado:**"));
-
-  //-------------------------------------------
-
-  mfrc522.PICC_DumpDetailsToSerial(&(mfrc522.uid)); //informar detalhes sobre o cartao
-  
-  //mfrc522.PICC_DumpToSerial(&(mfrc522.uid));      //ver blocos hex
-
-  //-------------------------------------------
-
-  Serial.print(F("Nome: "));
-
-  byte buffer1[18];
-
-  block = 4;
-  len = 18;
-
-  //------------------------------------------- Pegar Nome
-  status = mfrc522.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 4, &key, &(mfrc522.uid)); //linha 834 do arquivo MFRC522.cpp
-  if (status != MFRC522::STATUS_OK) {
-    Serial.print(F("Falha na Autentificacao: "));
-    Serial.println(mfrc522.GetStatusCodeName(status));
-    return;
-  }
-
-  status = mfrc522.MIFARE_Read(block, buffer1, &len);
-  if (status != MFRC522::STATUS_OK) {
-    Serial.print(F("Erro de Leitura: "));
-    Serial.println(mfrc522.GetStatusCodeName(status));
-    return;
-  }
-
-  //Imprimir Nome
-  for (uint8_t i = 0; i < 16; i++)
+  // Look for new cards
+  if ( ! mfrc522.PICC_IsNewCardPresent()) 
   {
-    if (buffer1[i] != 32)
-    {
-      Serial.write(buffer1[i]);
-    }
-  }
-  Serial.print(" ");
-
-  //---------------------------------------- Pegar Ultimo Nome
-
-  byte buffer2[18];
-  block = 1;
-
-  status = mfrc522.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 1, &key, &(mfrc522.uid)); //linha 834
-  if (status != MFRC522::STATUS_OK) {
-    Serial.print(F("Falha de Autentificacao: "));
-    Serial.println(mfrc522.GetStatusCodeName(status));
     return;
   }
-
-  status = mfrc522.MIFARE_Read(block, buffer2, &len);
-  if (status != MFRC522::STATUS_OK) {
-    Serial.print(F("Erro de Leitura: "));
-    Serial.println(mfrc522.GetStatusCodeName(status));
+  // Select one of the cards
+  if ( ! mfrc522.PICC_ReadCardSerial()) 
+  {
     return;
   }
-
-  //Imprimir Ultimo Nome
-  for (uint8_t i = 0; i < 16; i++) {
-    Serial.write(buffer2[i] );
+  //Mostra UID na serial
+  Serial.print("UID da tag :");
+  String conteudo= "";
+  byte letra;
+  for (byte i = 0; i < mfrc522.uid.size; i++) 
+  {
+     Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+     Serial.print(mfrc522.uid.uidByte[i], HEX);
+     conteudo.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+     conteudo.concat(String(mfrc522.uid.uidByte[i], HEX));
   }
+  Serial.println();
+  Serial.print("Mensagem : ");
+  conteudo.toUpperCase();
+
+  
+  if (conteudo.substring(1) == "F2 77 26 2C") //se o cartao inserido for o cadastrado
+  {
+    Serial.println("Acesso Garantido");
+    tone(buzzer,12000,400);
+    delay(500);
+    tone(buzzer,12000,400);
+    digitalWrite(pinFonte, HIGH); // ligar o sensor
+        abrirPortao();  
 
 
-  //----------------------------------------
-
-  Serial.println(F("\n**Leitura Realizada**\n"));
+  } else { //se o cartao inserido nao for o cadastrado
+    Serial.println("Acesso Negado");
+        tone(buzzer,800,800);
+        goto inicio;
+  }
  
-  
-  mfrc522.PICC_HaltA();
-  mfrc522.PCD_StopCrypto1();
-
-  abrirPortao();
-  
-  digitalWrite(pinFonte, HIGH); // ligar o sensor
-  
   fecharPortao();
-}
-
+  
+} 
 
 int abrirPortao(){
   Serial.println("Abrindo Portao");
@@ -189,7 +134,3 @@ int fecharPortao(){
   }
   return 0;
 }
-
-
-
-//*****************************************************************************************//
