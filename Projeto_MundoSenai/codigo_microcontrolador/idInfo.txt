@@ -1,0 +1,6 @@
+//permitir
+F2:77:26:2C
+
+//negar
+6C:FD:6E:85
+
